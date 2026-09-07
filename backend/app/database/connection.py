@@ -6,3 +6,4 @@ from app.config.settings import settings
 client = AsyncIOMotorClient(settings.mongodb_url)
 
 database = client["reportflow"]
+reports_collection = database["reports"]
