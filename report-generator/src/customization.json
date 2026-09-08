@@ -1,0 +1,41 @@
+{
+    "fontFamily": "Times New Roman",
+    "fontSize": 12,
+
+    "headingFontFamily": "Times New Roman",
+    "headingFontSize": 18,
+
+    "textColor": "#222222",
+    "headingColor": "#111111",
+
+    "backgroundColor": "#FFFFFF",
+
+    "backgroundImage": "",
+
+    "logo": "",
+
+    "margins": {
+        "top": 20,
+        "bottom": 20,
+        "left": 15,
+        "right": 15
+    },
+
+    "photo": {
+        "width": 300,
+        "height": 220,
+        "layout": "single"
+    },
+
+    "header": {
+        "enabled": true,
+        "text": ""
+    },
+
+    "footer": {
+        "enabled": true,
+        "text": "Generated using Eventory"
+    },
+
+    "pageNumbers": true
+}
