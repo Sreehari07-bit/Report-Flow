@@ -1,11 +1,15 @@
 from fastapi import FastAPI
+
 from app.database.connection import client, database
+from app.routes.report_routes import router as report_router
 
 app = FastAPI(
     title="Report Flow API",
     description="Backend API for the Report Flow application",
     version="1.0.0"
 )
+
+app.include_router(report_router)
 
 
 @app.on_event("startup")

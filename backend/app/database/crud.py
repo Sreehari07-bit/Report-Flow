@@ -1,3 +1,4 @@
+from bson.errors import InvalidId
 from bson import ObjectId
 
 from app.database.connection import reports_collection
@@ -16,7 +17,11 @@ async def create_report(report: Report) -> str:
 
 
 async def get_report(report_id: str) -> ReportResponse | None:
-    doc = await reports_collection.find_one({"_id": ObjectId(report_id)})
+    try:
+        object_id = ObjectId(report_id)
+    except InvalidId:
+        return None
+    doc = await reports_collection.find_one({"_id": object_id})
     if doc is None:
         return None
     return _to_response(doc)
