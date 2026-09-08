@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException
-
+from fastapi import APIRouter, HTTPException, Depends
+from app.utils.security import get_current_user_id
 from app.database.crud import create_report, get_report, get_all_reports
 from app.models.report import Report
 from app.schemas.report_schema import ReportCreate, ReportResponse
@@ -15,7 +15,7 @@ async def create_new_report(report_in: ReportCreate):
 
 
 @router.get("/", response_model=list[ReportResponse])
-async def list_reports():
+async def list_reports(current_user_id: str = Depends(get_current_user_id)):
     return await get_all_reports()
 
 
