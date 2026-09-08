@@ -1,0 +1,42 @@
+{
+  "institution": "ABC Institute of Technology",
+  "department": "Department of Electrical and Electronics Engineering",
+  "eventName": "AI Awareness Workshop",
+  "date": "25 August 2026",
+  "venue": "Seminar Hall",
+  "coordinator": "Arun Chitrabhanu",
+  "introduction": "An awareness workshop was conducted to introduce students to the applications, opportunities, and responsible use of Artificial Intelligence.",
+  "objectives": [
+    "Introduce students to the fundamentals of Artificial Intelligence.",
+    "Explain practical applications of AI in engineering.",
+    "Encourage students to explore AI-based technologies."
+  ],
+  "schedule": [
+    {
+      "time": "10:00 AM",
+      "activity": "Registration"
+    },
+    {
+      "time": "10:30 AM",
+      "activity": "Inauguration"
+    },
+    {
+      "time": "11:00 AM",
+      "activity": "AI Awareness Session"
+    },
+    {
+      "time": "12:30 PM",
+      "activity": "Interactive Discussion"
+    }
+  ],
+  "participants": 85,
+  "outcomes": [
+    "Students gained an understanding of basic AI concepts.",
+    "Participants learned about practical AI applications.",
+    "Students were encouraged to explore further learning opportunities."
+  ],
+  "conclusion": "The workshop provided students with useful insights into Artificial Intelligence and its relevance to engineering education.",
+  "photos": [
+  "images.jpg"
+]
+}
