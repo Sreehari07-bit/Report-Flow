@@ -7,3 +7,4 @@ client = AsyncIOMotorClient(settings.mongodb_url)
 
 database = client["reportflow"]
 reports_collection = database["reports"]
+users_collection = database["users"]
