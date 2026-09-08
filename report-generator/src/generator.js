@@ -196,9 +196,29 @@ async function generatePDF() {
         path: pdfPath,
         format: "A4",
         printBackground: true,
+
+        displayHeaderFooter: true,
+
+        headerTemplate: "<div></div>",
+
+        footerTemplate: `
+            <div style="
+                width: 100%;
+                text-align: center;
+                font-size: 9px;
+                color: #555;
+                font-family: Arial, sans-serif;
+            ">
+                Generated using Eventory — Page
+                <span class="pageNumber"></span>
+                of
+                <span class="totalPages"></span>
+            </div>
+        `,
+
         margin: {
             top: "20mm",
-            bottom: "20mm",
+            bottom: "25mm",
             left: "15mm",
             right: "15mm"
         }
