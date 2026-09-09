@@ -880,6 +880,7 @@ function CreateReport({ onBack, onGenerate }) {
  const [previewFile, setPreviewFile] = useState(null);
   const [fileMessage, setFileMessage] = useState("");
   const [files, setFiles] = useState([]);
+  const [isEditing, setIsEditing] = useState(true);
 
   const imagePreviewUrls = useMemo(() => {
   const previewMap = new Map();
