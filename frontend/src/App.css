@@ -1608,6 +1608,13 @@ svg {
   opacity: 0;
 
   cursor: pointer;
+
+  z-index: 1;
+}
+
+.selected-files {
+  position: relative;
+  z-index: 2;
 }
 
 .upload-icon {
@@ -1646,20 +1653,31 @@ svg {
   margin-top: 13px;
 }
 
-.selected-files span {
-  display: flex;
-  align-items: center;
+.selected-files button {
+  position: relative;
+  z-index: 3;
 
-  gap: 5px;
+  width: 18px;
+  height: 18px;
 
-  padding: 6px 8px;
+  display: grid;
+  place-items: center;
 
-  border-radius: 6px;
+  padding: 0;
 
-  color: #627085;
-  background: #edf1f5;
+  border: 0;
+  border-radius: 50%;
 
-  font-size: 8px;
+  color: #68778b;
+  background: #dfe5eb;
+
+  font-size: 12px;
+  line-height: 1;
+}
+
+.selected-files button:hover {
+  color: white;
+  background: #68778b;
 }
 
 .create-sidebar {

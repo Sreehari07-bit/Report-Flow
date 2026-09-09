@@ -14,7 +14,7 @@ const initialReports = [
     id: 2,
     title: "AI & Machine Learning Workshop",
     department: "Computer Science",
-    date: "Sep 03, 2026",
+    date: "Sep 03, 2026", 
     status: "Processing",
     type: "Workshop",
   },
@@ -869,10 +869,14 @@ function Dashboard({ reports, setPage }) {
 
 function CreateReport({ onBack, onGenerate }) {
   const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState("");
+  const [eventType, setEventType] = useState("");
+  const [department, setDepartment] = useState("Computer Science");
   const [date, setDate] = useState("");
   const [venue, setVenue] = useState("");
+  const [coordinator, setCoordinator] = useState("");
+  const [organizingTeam, setOrganizingTeam] = useState("");
   const [description, setDescription] = useState("");
+  const [objectives, setObjectives] = useState("");
   const [files, setFiles] = useState([]);
 
   const submit = (event) => {
@@ -922,15 +926,30 @@ function CreateReport({ onBack, onGenerate }) {
           </div>
 
           <div className="form-grid">
-            <label className="full">
+            <label>
               Event Title
-
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Faculty Development Programme"
-              />
+                placeholder="Enter event title"
+               />
             </label>
+            <label>
+  Event Type
+  <select
+    value={eventType}
+    onChange={(e) => setEventType(e.target.value)}
+  >
+    <option value="">Select event type</option>
+    <option value="Seminar">Seminar</option>
+    <option value="Workshop">Workshop</option>
+    <option value="Conference">Conference</option>
+    <option value="Webinar">Webinar</option>
+    <option value="Competition">Competition</option>
+    <option value="Cultural Event">Cultural Event</option>
+    <option value="Other">Other</option>
+  </select>
+</label>
 
             <label>
               Department
@@ -958,15 +977,32 @@ function CreateReport({ onBack, onGenerate }) {
               />
             </label>
 
-            <label className="full">
-              Venue
+            <label>
+  Venue
+  <input
+    value={venue}
+    onChange={(e) => setVenue(e.target.value)}
+    placeholder="Enter venue"
+  />
+</label>
 
-              <input
-                value={venue}
-                onChange={(e) => setVenue(e.target.value)}
-                placeholder="e.g. Seminar Hall, Block A"
-              />
-            </label>
+<label>
+  Coordinator
+  <input
+    value={coordinator}
+    onChange={(e) => setCoordinator(e.target.value)}
+    placeholder="Enter coordinator name"
+  />
+</label>
+
+<label>
+  Organizing Team
+  <input
+    value={organizingTeam}
+    onChange={(e) => setOrganizingTeam(e.target.value)}
+    placeholder="Enter organizing team"
+  />
+</label>
 
             <label className="full">
               Event Description
@@ -978,6 +1014,15 @@ function CreateReport({ onBack, onGenerate }) {
                 rows="6"
               />
             </label>
+            <label className="full">
+  Objectives
+  <textarea
+    value={objectives}
+    onChange={(e) => setObjectives(e.target.value)}
+    placeholder="Enter the objectives of the event..."
+    rows={4}
+  />
+</label>
           </div>
 
           <div className="form-divider" />
@@ -996,12 +1041,32 @@ function CreateReport({ onBack, onGenerate }) {
 
           <label className="upload-box">
             <input
-              type="file"
-              multiple
-              onChange={(event) =>
-                setFiles(Array.from(event.target.files || []))
-              }
-            />
+  type="file"
+  multiple
+  accept=".pdf,.docx,.xlsx,.csv,.jpg,.jpeg,.png"
+  onChange={(e) => {
+    const selectedFiles = Array.from(e.target.files);
+
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "text/csv",
+      "image/jpeg",
+      "image/png",
+    ];
+
+    const validFiles = selectedFiles.filter((file) => {
+      const isValidType = allowedTypes.includes(file.type);
+      const isValidSize = file.size <= 10 * 1024 * 1024;
+
+      return isValidType && isValidSize;
+    });
+
+    setFiles((previousFiles) => [...previousFiles, ...validFiles]);
+    e.target.value = "";
+  }}
+/>
 
             <div className="upload-icon">
               <Icon name="upload" size={24} />
@@ -1011,15 +1076,35 @@ function CreateReport({ onBack, onGenerate }) {
             <span>PDF, DOCX, XLSX, JPG, PNG up to 10MB each</span>
 
             {files.length > 0 && (
-              <div className="selected-files">
-                {files.map((file) => (
-                  <span key={file.name}>
-                    <Icon name="file" size={14} />
-                    {file.name}
-                  </span>
-                ))}
-              </div>
-            )}
+  <div className="selected-files">
+    {files.map((file, index) => {
+      const fileExtension = file.name.split(".").pop().toUpperCase();
+      const fileSize =
+        file.size < 1024 * 1024
+          ? `${(file.size / 1024).toFixed(1)} KB`
+          : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+      return (
+        <span key={`${file.name}-${index}`}>
+          <strong>{fileExtension}</strong>
+          {file.name} · {fileSize}
+
+          <button
+            type="button"
+            onClick={() => {
+              setFiles((previousFiles) =>
+                previousFiles.filter((_, fileIndex) => fileIndex !== index)
+              );
+            }}
+            aria-label={`Remove ${file.name}`}
+          >
+            ×
+          </button>
+        </span>
+      );
+    })}
+  </div>
+)}
           </label>
         </div>
 
