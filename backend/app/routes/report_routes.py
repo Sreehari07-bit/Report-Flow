@@ -8,7 +8,10 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
 @router.post("/", response_model=dict)
-async def create_new_report(report_in: ReportCreate):
+async def create_new_report(
+    report_in: ReportCreate,
+    current_user_id: str = Depends(get_current_user_id),
+):
     report = Report(title=report_in.title, content=report_in.content)
     new_id = await create_report(report)
     return {"id": new_id}
@@ -20,7 +23,10 @@ async def list_reports(current_user_id: str = Depends(get_current_user_id)):
 
 
 @router.get("/{report_id}", response_model=ReportResponse)
-async def read_report(report_id: str):
+async def read_report(
+    report_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+):
     report = await get_report(report_id)
     if report is None:
         raise HTTPException(status_code=404, detail="Report not found")
