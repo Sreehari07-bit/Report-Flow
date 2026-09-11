@@ -16,17 +16,17 @@ async def create_report(report: Report) -> str:
     return str(result.inserted_id)
 
 
-async def get_report(report_id: str) -> ReportResponse | None:
+async def get_report(report_id: str, owner_id: str) -> ReportResponse | None:
     try:
         object_id = ObjectId(report_id)
     except InvalidId:
         return None
-    doc = await reports_collection.find_one({"_id": object_id})
+    doc = await reports_collection.find_one({"_id": object_id, "owner_id": owner_id})
     if doc is None:
         return None
     return _to_response(doc)
 
 
-async def get_all_reports() -> list[ReportResponse]:
-    cursor = reports_collection.find()
+async def get_all_reports(owner_id: str) -> list[ReportResponse]:
+    cursor = reports_collection.find({"owner_id": owner_id})
     return [_to_response(doc) async for doc in cursor]
