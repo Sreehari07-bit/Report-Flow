@@ -869,17 +869,46 @@ function Dashboard({ reports, setPage }) {
 
 function CreateReport({ onBack, onGenerate }) {
   const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState("");
+  const [eventType, setEventType] = useState("");
+  const [department, setDepartment] = useState("Computer Science");
   const [date, setDate] = useState("");
   const [venue, setVenue] = useState("");
+  const [coordinator, setCoordinator] = useState("");
+  const [organizingTeam, setOrganizingTeam] = useState("");
   const [description, setDescription] = useState("");
+  const [objectives, setObjectives] = useState("");
+ const [previewFile, setPreviewFile] = useState(null);
+  const [fileMessage, setFileMessage] = useState("");
   const [files, setFiles] = useState([]);
+  const [isEditing, setIsEditing] = useState(true);
+
+  const imagePreviewUrls = useMemo(() => {
+  const previewMap = new Map();
+
+  files.forEach((file) => {
+    if (file.type.startsWith("image/")) {
+      const key = `${file.name}-${file.size}-${file.lastModified}`;
+      previewMap.set(key, URL.createObjectURL(file));
+    }
+  });
+
+  return previewMap;
+}, [files]);
+
+  useEffect(() => {
+    return () => {
+      imagePreviewUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, [imagePreviewUrls]);
 
   const submit = (event) => {
     event.preventDefault();
 
     onGenerate({
       title: title || "Untitled Faculty Event",
+      eventType,
       department: department || "General",
       date: date
         ? new Date(date).toLocaleDateString("en-US", {
@@ -889,9 +918,62 @@ function CreateReport({ onBack, onGenerate }) {
           })
         : "Sep 07, 2026",
       venue,
+      coordinator,
+      organizingTeam,
       description,
+      objectives,
       files,
     });
+  };
+
+  const handleFileChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+
+    const allowedExtensions = [
+      "pdf",
+      "docx",
+      "xlsx",
+      "csv",
+      "jpg",
+      "jpeg",
+      "png",
+    ];
+
+    const maxFileSize = 10 * 1024 * 1024;
+
+    const validFiles = [];
+    const invalidFiles = [];
+
+    selectedFiles.forEach((file) => {
+      const extension = file.name.split(".").pop().toLowerCase();
+
+      const isValidType = allowedExtensions.includes(extension);
+      const isValidSize = file.size <= maxFileSize;
+
+      if (isValidType && isValidSize) {
+        validFiles.push(file);
+      } else {
+        invalidFiles.push(file);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      setFileMessage(
+        "Some files were skipped. Only PDF, DOCX, XLSX, CSV, JPG, and PNG files up to 10MB are allowed."
+      );
+    } else {
+      setFileMessage("");
+    }
+
+    setFiles((previousFiles) => [...previousFiles, ...validFiles]);
+
+    event.target.value = "";
+  };
+
+  const removeFile = (indexToRemove) => {
+    setFiles((previousFiles) =>
+      previousFiles.filter((_, index) => index !== indexToRemove)
+    );
   };
 
   return (
@@ -922,14 +1004,33 @@ function CreateReport({ onBack, onGenerate }) {
           </div>
 
           <div className="form-grid">
-            <label className="full">
+            <label>
               Event Title
 
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Faculty Development Programme"
+                placeholder="Enter event title"
               />
+            </label>
+
+            <label>
+              Event Type
+
+              <select
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value)}
+              >
+                <option value="">Select event type</option>
+                <option value="Seminar">Seminar</option>
+                <option value="Workshop">Workshop</option>
+                <option value="Conference">Conference</option>
+                <option value="Webinar">Webinar</option>
+                <option value="Competition">Competition</option>
+                <option value="Cultural Event">Cultural Event</option>
+                <option value="Programme">Programme</option>
+                <option value="Other">Other</option>
+              </select>
             </label>
 
             <label>
@@ -958,13 +1059,33 @@ function CreateReport({ onBack, onGenerate }) {
               />
             </label>
 
-            <label className="full">
+            <label>
               Venue
 
               <input
                 value={venue}
                 onChange={(e) => setVenue(e.target.value)}
-                placeholder="e.g. Seminar Hall, Block A"
+                placeholder="Enter venue"
+              />
+            </label>
+
+            <label>
+              Coordinator
+
+              <input
+                value={coordinator}
+                onChange={(e) => setCoordinator(e.target.value)}
+                placeholder="Enter coordinator name"
+              />
+            </label>
+
+            <label>
+              Organizing Team
+
+              <input
+                value={organizingTeam}
+                onChange={(e) => setOrganizingTeam(e.target.value)}
+                placeholder="Enter organizing team"
               />
             </label>
 
@@ -976,6 +1097,17 @@ function CreateReport({ onBack, onGenerate }) {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Briefly describe the event, activities, speakers, outcomes, and other important details..."
                 rows="6"
+              />
+            </label>
+
+            <label className="full">
+              Objectives
+
+              <textarea
+                value={objectives}
+                onChange={(e) => setObjectives(e.target.value)}
+                placeholder="Enter the objectives of the event..."
+                rows="4"
               />
             </label>
           </div>
@@ -994,13 +1126,33 @@ function CreateReport({ onBack, onGenerate }) {
             </div>
           </div>
 
-          <label className="upload-box">
+          <label
+  className="upload-box"
+  onDragOver={(event) => {
+    event.preventDefault();
+    event.currentTarget.classList.add("drag-over");
+  }}
+  onDragLeave={(event) => {
+    event.currentTarget.classList.remove("drag-over");
+  }}
+  onDrop={(event) => {
+    event.preventDefault();
+    event.currentTarget.classList.remove("drag-over");
+
+    const droppedFiles = Array.from(event.dataTransfer.files);
+
+    handleFileChange({
+      target: {
+        files: droppedFiles,
+      },
+    });
+  }}
+>
             <input
               type="file"
               multiple
-              onChange={(event) =>
-                setFiles(Array.from(event.target.files || []))
-              }
+              accept=".pdf,.docx,.xlsx,.csv,.jpg,.jpeg,.png"
+              onChange={handleFileChange}
             />
 
             <div className="upload-icon">
@@ -1008,16 +1160,84 @@ function CreateReport({ onBack, onGenerate }) {
             </div>
 
             <strong>Drop your files here or browse</strong>
-            <span>PDF, DOCX, XLSX, JPG, PNG up to 10MB each</span>
+
+            <span>
+              PDF, DOCX, XLSX, CSV, JPG, PNG up to 10MB each
+            </span>
+
+            {fileMessage && (
+              <span
+                style={{
+                  color: "#a47e50",
+                  marginTop: "8px",
+                  fontSize: "8px",
+                  maxWidth: "90%",
+                }}
+              >
+                {fileMessage}
+              </span>
+            )}
 
             {files.length > 0 && (
-              <div className="selected-files">
-                {files.map((file) => (
-                  <span key={file.name}>
-                    <Icon name="file" size={14} />
-                    {file.name}
-                  </span>
-                ))}
+              <div
+                className="selected-files"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {files.map((file, index) => {
+                  const fileExtension = file.name
+                    .split(".")
+                    .pop()
+                    .toUpperCase();
+
+                  const fileSize =
+                    file.size < 1024 * 1024
+                      ? `${(file.size / 1024).toFixed(1)} KB`
+                      : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+                  const previewKey = `${file.name}-${file.size}-${file.lastModified}`;
+                  const previewUrl = imagePreviewUrls.get(previewKey);
+
+                  return (
+                    <span
+                      key={`${file.name}-${index}`}
+                      className="selected-file"
+                    >
+                      {previewUrl && (
+                        <button
+  type="button"
+  className="file-preview-button"
+  onClick={(event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setPreviewFile(file);
+  }}
+>
+  <img
+    src={previewUrl}
+    className="file-preview-image"
+    alt={file.name}
+  />
+</button>
+                      )}
+
+                      <strong>{fileExtension}</strong>
+
+                      {file.name} · {fileSize}
+
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          removeFile(index);
+                        }}
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
             )}
           </label>
@@ -1065,8 +1285,36 @@ function CreateReport({ onBack, onGenerate }) {
           </p>
         </aside>
       </form>
+      {previewFile && (
+  <div
+    className="image-preview-modal"
+    onClick={() => setPreviewFile(null)}
+  >
+    <div
+      className="image-preview-content"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="image-preview-close"
+        onClick={() => setPreviewFile(null)}
+      >
+        ×
+      </button>
+
+      <img
+        src={imagePreviewUrls.get(
+  `${previewFile.name}-${previewFile.size}-${previewFile.lastModified}`)}
+        alt={previewFile.name}
+        className="large-preview-image"
+      />
+
+      <p>{previewFile.name}</p>
     </div>
-  );
+  </div>
+)}
+    </div>
+  );  
 }
 
 function Processing({ report, onComplete }) {
@@ -1265,8 +1513,16 @@ function GeneratedReport({
               </p>
             </div>
 
+            {report?.objectives && (
+              <div className="document-content-section">
+                <h3>3. Objectives</h3>
+
+                <p>{report.objectives}</p>
+              </div>
+            )}
+
             <div className="document-content-section">
-              <h3>3. Outcomes</h3>
+              <h3>{report?.objectives ? "4. Outcomes" : "3. Outcomes"}</h3>
 
               <p>
                 Participants gained useful knowledge and practical insights.
@@ -1299,9 +1555,30 @@ function GeneratedReport({
           </div>
 
           <div className="summary-row">
+            <span>Event Type</span>
+            <strong>
+              {report?.eventType || "Event Report"}
+            </strong>
+          </div>
+
+          <div className="summary-row">
             <span>Department</span>
             <strong>
               {report?.department || "Computer Science"}
+            </strong>
+          </div>
+
+          <div className="summary-row">
+            <span>Coordinator</span>
+            <strong>
+              {report?.coordinator || "Not specified"}
+            </strong>
+          </div>
+
+          <div className="summary-row">
+            <span>Organizing Team</span>
+            <strong>
+              {report?.organizingTeam || "Not specified"}
             </strong>
           </div>
 
@@ -1313,6 +1590,13 @@ function GeneratedReport({
           <div className="summary-row">
             <span>Format</span>
             <strong>Faculty Report</strong>
+          </div>
+
+          <div className="summary-row">
+            <span>Files</span>
+            <strong>
+              {report?.files?.length || 0} uploaded
+            </strong>
           </div>
 
           <button
@@ -1488,12 +1772,16 @@ export default function App() {
     const newReport = {
       id: Date.now(),
       title: data.title,
+      eventType: data.eventType,
       department: data.department,
       date: data.date,
       status: "Processing",
-      type: "Event Report",
+      type: data.eventType || "Event Report",
       venue: data.venue,
+      coordinator: data.coordinator,
+      organizingTeam: data.organizingTeam,
       description: data.description,
+      objectives: data.objectives,
       files: data.files,
     };
 
