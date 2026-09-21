@@ -16,12 +16,17 @@ async def register_user(user_in: UserCreate):
         raise HTTPException(status_code=400, detail="Email already registered")
 
     user = User(
+        full_name=user_in.full_name,
         email=user_in.email,
         hashed_password=hash_password(user_in.password),
     )
     result = await users_collection.insert_one(user.model_dump())
 
-    return UserResponse(id=str(result.inserted_id), email=user.email)
+    return UserResponse(
+        id=str(result.inserted_id),
+        full_name=user.full_name,
+        email=user.email,
+    )
 
 
 @router.post("/login", response_model=Token)
@@ -31,7 +36,11 @@ async def login_user(credentials: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token({"sub": str(user["_id"])})
-    return Token(access_token=token)
+    return Token(
+        access_token=token,
+        full_name=user.get("full_name") or user["email"].split("@")[0],
+        email=user["email"],
+    )
 
 
 @router.post("/token", response_model=Token)
@@ -41,4 +50,8 @@ async def login_for_swagger(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token({"sub": str(user["_id"])})
-    return Token(access_token=token)
+    return Token(
+        access_token=token,
+        full_name=user.get("full_name") or user["email"].split("@")[0],
+        email=user["email"],
+    )
