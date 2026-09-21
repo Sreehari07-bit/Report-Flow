@@ -1,40 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
+import {
+  clearStoredToken,
+  createReport,
+  getReports,
+  getStoredToken,
+  getStoredUser,
+  login,
+  register,
+  updateReport,
+} from "./api";
 
-const initialReports = [
-  {
-    id: 1,
-    title: "Faculty Development Programme",
-    department: "Computer Science",
-    date: "Sep 05, 2026",
-    status: "Completed",
-    type: "Event Report",
-  },
-  {
-    id: 2,
-    title: "AI & Machine Learning Workshop",
-    department: "Computer Science",
-    date: "Sep 03, 2026",
-    status: "Processing",
-    type: "Workshop",
-  },
-  {
-    id: 3,
-    title: "Technical Seminar",
-    department: "Information Technology",
-    date: "Sep 01, 2026",
-    status: "Completed",
-    type: "Seminar",
-  },
-  {
-    id: 4,
-    title: "Student Orientation Programme",
-    department: "Engineering",
-    date: "Aug 28, 2026",
-    status: "Completed",
-    type: "Programme",
-  },
-];
+function formatUser(user) {
+  const email = user?.email || "";
+  const fullName = user?.fullName || user?.full_name || email.split("@")[0] || "Account";
+  const initials = fullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("") || "AC";
+
+  return { fullName, email, initials };
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
 
 function Icon({ name, size = 20 }) {
   const common = {
@@ -222,18 +218,24 @@ function LoginPage({ onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
+    setMessage("");
 
     if (!email || !password || (mode === "signup" && !fullName)) {
       setMessage("Please complete all required fields.");
       return;
     }
 
-    onLogin({
-      name: mode === "signup" ? fullName : "Agile Shijo John",
-      email,
-    });
+    try {
+      if (mode === "signup") {
+        await register({ full_name: fullName, email, password });
+      }
+
+      await onLogin({ email, password, full_name: fullName });
+    } catch (error) {
+      setMessage(error.message);
+    }
   };
 
   return (
@@ -397,7 +399,7 @@ function LoginPage({ onLogin }) {
                   className="forgot-button"
                   onClick={() =>
                     setMessage(
-                      "Password reset will be connected to the backend."
+                      "Password reset is not configured yet. Please contact your administrator."
                     )
                   }
                 >
@@ -427,7 +429,7 @@ function LoginPage({ onLogin }) {
             className="google-button"
             onClick={() =>
               setMessage(
-                "Google authentication will be connected to the backend."
+                "Google sign-in is not configured yet. Use your email and password to sign in."
               )
             }
           >
@@ -451,6 +453,7 @@ function Sidebar({
   mobileOpen,
   setMobileOpen,
   onLogout,
+  user,
 }) {
   const navigation = [
     ["home", "Dashboard", "dashboard"],
@@ -528,10 +531,10 @@ function Sidebar({
 
           <div className="sidebar-account">
             <div className="account-info">
-              <div className="user-avatar">AS</div>
+              <div className="user-avatar">{user.initials}</div>
 
               <div>
-                <strong>Agile Shijo John</strong>
+                <strong>{user.fullName}</strong>
                 <span>Faculty Member</span>
               </div>
             </div>
@@ -550,7 +553,7 @@ function Sidebar({
   );
 }
 
-function Header({ onMenu }) {
+function Header({ onMenu, user }) {
   return (
     <header className="topbar">
       <button className="mobile-menu" onClick={onMenu}>
@@ -572,10 +575,10 @@ function Header({ onMenu }) {
         <div className="topbar-divider" />
 
         <div className="profile-mini">
-          <div className="profile-avatar">AS</div>
+          <div className="profile-avatar">{user.initials}</div>
 
           <div>
-            <strong>Agile Shijo John</strong>
+            <strong>{user.fullName}</strong>
             <span>Faculty Member</span>
           </div>
         </div>
@@ -620,7 +623,7 @@ function StatusBadge({ status }) {
   );
 }
 
-function Dashboard({ reports, setPage }) {
+function Dashboard({ reports, setPage, user }) {
   const completed = reports.filter(
     (report) => report.status === "Completed"
   ).length;
@@ -639,7 +642,7 @@ function Dashboard({ reports, setPage }) {
           </div>
 
           <h1>
-            Good morning, <span>Agile.</span>
+            {getGreeting()}, <span>{user.fullName.split(" ")[0]}.</span>
           </h1>
 
           <p>
@@ -867,16 +870,16 @@ function Dashboard({ reports, setPage }) {
   );
 }
 
-function CreateReport({ onBack, onGenerate }) {
-  const [title, setTitle] = useState("");
-  const [eventType, setEventType] = useState("");
-  const [department, setDepartment] = useState("Computer Science");
-  const [date, setDate] = useState("");
-  const [venue, setVenue] = useState("");
-  const [coordinator, setCoordinator] = useState("");
-  const [organizingTeam, setOrganizingTeam] = useState("");
-  const [description, setDescription] = useState("");
-  const [objectives, setObjectives] = useState("");
+function CreateReport({ onBack, onGenerate, initialReport }) {
+  const [title, setTitle] = useState(initialReport?.title || "");
+  const [eventType, setEventType] = useState(initialReport?.eventType || "");
+  const [department, setDepartment] = useState(initialReport?.department || "Computer Science");
+  const [date, setDate] = useState(initialReport?.date || "");
+  const [venue, setVenue] = useState(initialReport?.venue || "");
+  const [coordinator, setCoordinator] = useState(initialReport?.coordinator || "");
+  const [organizingTeam, setOrganizingTeam] = useState(initialReport?.organizingTeam || "");
+  const [description, setDescription] = useState(initialReport?.description || "");
+  const [objectives, setObjectives] = useState(initialReport?.objectives || "");
  const [previewFile, setPreviewFile] = useState(null);
   const [fileMessage, setFileMessage] = useState("");
   const [files, setFiles] = useState([]);
@@ -907,6 +910,7 @@ function CreateReport({ onBack, onGenerate }) {
     event.preventDefault();
 
     onGenerate({
+      id: initialReport?.id,
       title: title || "Untitled Faculty Event",
       eventType,
       department: department || "General",
@@ -1413,10 +1417,36 @@ function Processing({ report, onComplete }) {
   );
 }
 
+function escapeHtml(value = "") {
+  return String(value).replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
+  }[character]));
+}
+
+function downloadReport(report) {
+  const title = escapeHtml(report?.title || "Faculty Event Report");
+  const description = escapeHtml(report?.description || "No description provided.");
+  const objectives = report?.objectives
+    ? `<h2>Objectives</h2><p>${escapeHtml(report.objectives)}</p>`
+    : "";
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;line-height:1.6;color:#27313d}h1{border-bottom:2px solid #27313d;padding-bottom:12px}h2{margin-top:28px}table{width:100%;border-collapse:collapse}td{padding:8px;border-bottom:1px solid #ddd}td:first-child{font-weight:bold;width:160px}</style></head><body><h1>${title}</h1><table><tr><td>Event Type</td><td>${escapeHtml(report?.eventType || "Event Report")}</td></tr><tr><td>Department</td><td>${escapeHtml(report?.department || "")}</td></tr><tr><td>Date</td><td>${escapeHtml(report?.date || "")}</td></tr><tr><td>Venue</td><td>${escapeHtml(report?.venue || "")}</td></tr></table><h2>Event Description</h2><p>${description}</p>${objectives}<h2>Outcomes</h2><p>Participants gained useful knowledge and practical insights from the event.</p></body></html>`;
+  const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${(report?.title || "faculty-event-report").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")}.html`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function GeneratedReport({
   report,
   onBack,
   onDashboard,
+  onEdit,
 }) {
   return (
     <div className="page-content inner-page">
@@ -1438,20 +1468,14 @@ function GeneratedReport({
         <div className="generated-actions">
           <button
             className="outline-button"
-            onClick={() =>
-              alert("Edit mode will be connected later.")
-            }
+            onClick={onEdit}
           >
             Edit Report
           </button>
 
           <button
             className="dark-button"
-            onClick={() =>
-              alert(
-                "Download functionality will be connected to the backend."
-              )
-            }
+            onClick={() => downloadReport(report)}
           >
             <Icon name="download" size={17} />
             Download Report
@@ -1612,7 +1636,7 @@ function GeneratedReport({
   );
 }
 
-function ReportsPage({ reports, setPage }) {
+function ReportsPage({ reports, setPage, onSelectReport }) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -1679,7 +1703,10 @@ function ReportsPage({ reports, setPage }) {
 
               <button
                 className="view-button"
-                onClick={() => setPage("generated")}
+                onClick={() => {
+                  onSelectReport(report);
+                  setPage("generated");
+                }}
               >
                 <Icon name="eye" size={16} />
                 View
@@ -1697,6 +1724,128 @@ function ReportsPage({ reports, setPage }) {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TemplatesPage({ onUseTemplate }) {
+  const templates = [
+    {
+      type: "Seminar",
+      title: "Academic Seminar",
+      text: "Capture speakers, topics, learning outcomes, and participant takeaways.",
+      icon: "template",
+    },
+    {
+      type: "Workshop",
+      title: "Training Workshop",
+      text: "Organize workshop activities, facilitators, objectives, and results.",
+      icon: "spark",
+    },
+    {
+      type: "Programme",
+      title: "Faculty Programme",
+      text: "Create a structured record for programmes, ceremonies, and orientations.",
+      icon: "reports",
+    },
+  ];
+
+  return (
+    <div className="page-content inner-page">
+      <div className="inner-heading">
+        <span className="section-kicker">REPORT TEMPLATES</span>
+        <h1>Start with a template</h1>
+        <p>Choose a format and add your event details.</p>
+      </div>
+
+      <div className="template-grid">
+        {templates.map((template) => (
+          <article className="template-card panel" key={template.type}>
+            <div className="template-icon">
+              <Icon name={template.icon} size={22} />
+            </div>
+            <span className="section-kicker">{template.type.toUpperCase()}</span>
+            <h2>{template.title}</h2>
+            <p>{template.text}</p>
+            <button
+              className="dark-button"
+              onClick={() => onUseTemplate(template)}
+            >
+              Use template
+              <Icon name="arrow" size={16} />
+            </button>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsPage({ reports }) {
+  const completed = reports.filter((report) => report.status === "Completed").length;
+  const departments = [...new Set(reports.map((report) => report.department).filter(Boolean))];
+  const eventTypes = reports.reduce((counts, report) => {
+    const type = report.type || report.eventType || "Event Report";
+    counts[type] = (counts[type] || 0) + 1;
+    return counts;
+  }, {});
+
+  return (
+    <div className="page-content inner-page">
+      <div className="inner-heading">
+        <span className="section-kicker">INSIGHTS</span>
+        <h1>Analytics</h1>
+        <p>Understand your reporting activity at a glance.</p>
+      </div>
+
+      <div className="analytics-stats">
+        <StatCard icon="reports" value={reports.length} label="Total reports" note="Saved in your workspace" />
+        <StatCard icon="check" value={completed} label="Completed" note="Ready to review or download" type="success" />
+        <StatCard icon="template" value={Object.keys(eventTypes).length} label="Report types" note="Different formats used" type="accent" />
+        <StatCard icon="folder" value={departments.length} label="Departments" note="Represented in your reports" type="warning" />
+      </div>
+
+      <div className="analytics-columns">
+        <section className="panel analytics-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">BREAKDOWN</span>
+              <h2>Reports by type</h2>
+            </div>
+          </div>
+          {Object.keys(eventTypes).length === 0 ? (
+            <p className="analytics-empty">Create a report to see your activity here.</p>
+          ) : (
+            Object.entries(eventTypes).map(([type, count]) => (
+              <div className="analytics-row" key={type}>
+                <span>{type}</span>
+                <div className="analytics-bar"><span style={{ width: `${(count / reports.length) * 100}%` }} /></div>
+                <strong>{count}</strong>
+              </div>
+            ))
+          )}
+        </section>
+
+        <section className="panel analytics-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">WORKSPACE</span>
+              <h2>Departments</h2>
+            </div>
+          </div>
+          {departments.length === 0 ? (
+            <p className="analytics-empty">Department insights appear after your first report.</p>
+          ) : (
+            departments.map((department) => (
+              <div className="department-row" key={department}>
+                <span className="report-file-icon"><Icon name="folder" size={16} /></span>
+                <strong>{department}</strong>
+                <span>{reports.filter((report) => report.department === department).length} reports</span>
+              </div>
+            ))
+          )}
+        </section>
       </div>
     </div>
   );
@@ -1750,44 +1899,82 @@ function PlaceholderPage({ type }) {
 }
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(Boolean(getStoredToken()));
+  const [user, setUser] = useState(() => {
+    const storedUser = getStoredUser();
+    return formatUser(storedUser);
+  });
   const [page, setPage] = useState("dashboard");
-  const [reports, setReports] = useState(initialReports);
+  const [reports, setReports] = useState([]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [processingReport, setProcessingReport] = useState(null);
   const [generatedReport, setGeneratedReport] = useState(null);
+  const [editingReport, setEditingReport] = useState(null);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [appMessage, setAppMessage] = useState("");
 
-  const handleLogin = () => {
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    setLoadingReports(true);
+    getReports()
+      .then(setReports)
+      .catch((error) => {
+        clearStoredToken();
+        setLoggedIn(false);
+        setAppMessage(error.message);
+      })
+      .finally(() => setLoadingReports(false));
+  }, [loggedIn]);
+
+  const handleLogin = async (credentials) => {
+    const result = await login(credentials);
+    setUser(formatUser({
+      fullName: result.full_name,
+      email: result.email || credentials.email,
+    }));
     setLoggedIn(true);
     setPage("dashboard");
   };
 
   const handleLogout = () => {
+    clearStoredToken();
     setLoggedIn(false);
+    setUser(formatUser(null));
     setPage("dashboard");
     setMobileOpen(false);
   };
 
-  const handleGenerate = (data) => {
-    const newReport = {
-      id: Date.now(),
-      title: data.title,
-      eventType: data.eventType,
-      department: data.department,
-      date: data.date,
-      status: "Processing",
-      type: data.eventType || "Event Report",
-      venue: data.venue,
-      coordinator: data.coordinator,
-      organizingTeam: data.organizingTeam,
-      description: data.description,
-      objectives: data.objectives,
-      files: data.files,
-    };
+  const handleGenerate = async (data) => {
+    setAppMessage("");
 
-    setReports((current) => [newReport, ...current]);
-    setProcessingReport(newReport);
-    setPage("processing");
+    try {
+      const reportData = {
+        ...data,
+        type: data.eventType || "Event Report",
+        files: data.files.map((file) => typeof file === "string" ? file : file.name),
+        status: "Completed",
+      };
+      const savedReport = data.id
+        ? await updateReport(reportData)
+        : await createReport(reportData);
+      const newReport = {
+        ...reportData,
+        ...savedReport,
+        id: data.id || savedReport.id,
+        status: "Completed",
+      };
+
+      setReports((current) => data.id
+        ? current.map((report) => report.id === data.id ? newReport : report)
+        : [newReport, ...current]);
+      setProcessingReport(newReport);
+      setGeneratedReport(newReport);
+      setEditingReport(null);
+      setPage("processing");
+    } catch (error) {
+      setAppMessage(error.message);
+    }
   };
 
   const finishProcessing = () => {
@@ -1808,7 +1995,16 @@ export default function App() {
   };
 
   if (!loggedIn) {
-    return <LoginPage onLogin={handleLogin} />;
+    return (
+      <>
+        {appMessage && <div className="api-message">{appMessage}</div>}
+        <LoginPage onLogin={handleLogin} />
+      </>
+    );
+  }
+
+  if (loadingReports) {
+    return <div className="app-loading">Loading your reports...</div>;
   }
 
   return (
@@ -1819,19 +2015,23 @@ export default function App() {
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         onLogout={handleLogout}
+        user={user}
       />
 
       <main className="main-area">
-        <Header onMenu={() => setMobileOpen(true)} />
+        <Header onMenu={() => setMobileOpen(true)} user={user} />
+
+        {appMessage && <div className="auth-message api-error">{appMessage}</div>}
 
         {page === "dashboard" && (
-          <Dashboard reports={reports} setPage={setPage} />
+          <Dashboard reports={reports} setPage={setPage} user={user} />
         )}
 
         {page === "create" && (
           <CreateReport
             onBack={() => setPage("dashboard")}
             onGenerate={handleGenerate}
+            initialReport={editingReport}
           />
         )}
 
@@ -1847,6 +2047,10 @@ export default function App() {
             report={generatedReport || reports[0]}
             onBack={() => setPage("dashboard")}
             onDashboard={() => setPage("dashboard")}
+            onEdit={() => {
+              setEditingReport(generatedReport || reports[0]);
+              setPage("create");
+            }}
           />
         )}
 
@@ -1854,15 +2058,25 @@ export default function App() {
           <ReportsPage
             reports={reports}
             setPage={setPage}
+            onSelectReport={setGeneratedReport}
           />
         )}
 
         {page === "templates" && (
-          <PlaceholderPage type="templates" />
+          <TemplatesPage
+            onUseTemplate={(template) => {
+              setEditingReport({
+                title: "",
+                eventType: template.type,
+                department: "Computer Science",
+              });
+              setPage("create");
+            }}
+          />
         )}
 
         {page === "analytics" && (
-          <PlaceholderPage type="analytics" />
+          <AnalyticsPage reports={reports} />
         )}
 
         {page === "settings" && (
